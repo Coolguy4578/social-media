@@ -1,0 +1,111 @@
+.michroma-regular {
+  font-family: "Michroma", sans-serif;
+  font-weight: 400;
+  font-style: normal;
+}
+
+.cool-font {
+    font-family: 'Michroma', sans-serif;
+}
+.header{
+
+  font-size: 80px;
+  font-weight: 900;
+  text-transform: uppercase;
+
+  /* 1. Set the background image */
+  background-image: url('/static/taco.jpg');
+  background-size: cover;
+  background-position: center;
+
+  /* 2. Clip the background to the text boundary */
+  -webkit-background-clip: text;
+  background-clip: text;
+
+  /* 3. Make the actual text color transparent to reveal the image underneath */
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+    background-color: yellow;
+
+
+    color: #0e0d0e;
+    font-size: 50pt;
+
+}
+header {
+    display: flex;
+  justify-content: flex-start;
+}
+@font-face {
+  font-family: 'Talko';
+  src: url('/static/fonts/talkoFont.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+.talko-wordmark{
+ font-family: Talko;
+    font-size: calc(1em + 5px);
+}
+.last-letter{
+    color: #f46753
+}
+.logo {
+    height: 200px;
+    width: 200px;
+    border-radius: 12px;
+    border: 2px solid #000000;
+}
+.logo-area{
+ margin-right: auto;
+}
+.user-box {
+  /* Step 1: Set the tiny, equal dimensions */
+  width: 32px;
+  height: 32px;
+
+  /* Step 2: Turn the square container into a perfect circle */
+  border-radius: 50%;
+
+  /* Step 3: Crop away any parts of the image sticking out */
+  overflow: hidden;
+}
+
+.user-box img {
+  /* Step 4: Ensure the image fills the circle without distorting */
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+.site-header {
+  display: flex;
+  justify-content: space-between; /* Puts logo on left, profile on right */
+  align-items: center;
+  padding: 15px 30px;
+  background-color: #1a1a1a;
+  color: #ffffff;
+  font-family: 'Michroma', sans-serif;
+    border-radius:12px;
+}
+
+/* Profile Alignment */
+.profile-container {
+  display: flex;
+  align-items: center;
+  gap: 12px; /* Creates clean spacing between image and text */
+}
+
+/* Profile Image Styling */
+.profile-img {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%; /* Makes the square image a perfect circle */
+  object-fit: cover; /* Prevents the image from stretching */
+  border: 2px solid #000000; /* Optional: futuristic border color */
+}
+
+/* Profile Name Styling */
+.profile-name {
+  font-size: 14px;
+  letter-spacing: 0.5px;
+}
