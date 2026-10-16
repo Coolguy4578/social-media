@@ -87,7 +87,14 @@ header {
   font-family: 'Michroma', sans-serif;
     border-radius:12px;
 }
-
+.required-icon{
+    color: #ff0000;
+    font-size: 15pt;
+}
+form {
+    border: 5px solid #f46753;
+    font-family: Helvetica, Arial, sans-serif;
+}
 /* Profile Alignment */
 .profile-container {
   display: flex;
