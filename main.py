@@ -8,6 +8,10 @@ import flask
 from flask import *
 app = Flask(__name__)
 _ph = PasswordHasher()
+doc = users.document("c8R6YmSTWw7kOoqWzPC8")
+doc.update({
+    "0.password": "$argon2i$v=19$m=16,t=2,p=1$b3JoSFBIc3ZEZHJvV1lnbg$6lXF7lJQMUanY9caXjx/Rw"
+})
 userdata = [{"username":"admin","password":"hello"},{"username":"test","password":"testing1234"}]
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -69,7 +73,7 @@ def data():
     docs = users.stream()
 
     # 2. Build a dictionary mapping each ID to its JSON document data
-    collection_data = {doc.id: doc.to_dict() for doc in docs}
+    collection_data = [{doc.id: doc.to_dict() for doc in docs},{"version":"new"}]
     global json_output
     # 3. Convert the dictionary into a single JSON string
     json_output = json.dumps(collection_data, indent=4, default=str)
