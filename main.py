@@ -11,7 +11,16 @@ _ph = PasswordHasher()
 userdata = [{"username":"admin","password":"hello"},{"username":"test","password":"testing1234"}]
 @app.route("/data")
 def data():
-    return jsonify(users.document().get().to_dict())
+    docs = users.stream()
+
+    # 2. Build a dictionary mapping each ID to its JSON document data
+    collection_data = {doc.id: doc.to_dict() for doc in docs}
+
+    # 3. Convert the dictionary into a single JSON string
+    json_output = json.dumps(collection_data, indent=4, default=str)
+
+    print(json_output)
+    return jsonify(json.dumps(json_output))
 @app.route('/')
 def hello_world():
     return flask.render_template('index.html')
