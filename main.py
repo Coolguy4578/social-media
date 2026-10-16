@@ -36,7 +36,7 @@ def login():
         global json_output
         # 3. Convert the dictionary into a single JSON string
         json_output = json.dumps(collection_data, indent=4, default=str)
-        for i in collection_data.keys()[0]:
+        for i in collection_data[0].keys():
             if i['username'] == request.form['username']:
                 if i['password'] == request.form['password']:
                     user_match = True
