@@ -2,7 +2,7 @@ import os
 from argon2 import PasswordHasher
 import google.cloud.firestore as firestore
 from argon2.exceptions import VerifyMismatchError, VerificationError, InvalidHashError
-db=firestore.Client()
+db=firestore.Client(database="talko-database")
 users=db.collection('users')
 import flask
 from flask import *
