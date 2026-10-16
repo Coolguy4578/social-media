@@ -29,22 +29,25 @@ def login():
     if request.method == 'GET':
         return flask.render_template('login.html')
     elif request.method == 'POST':
-        print(request.form)
-        user_match = False
-        docs = users.stream()
-        collection_data = {doc.id: doc.to_dict() for doc in docs}
-        global json_output
-        # 3. Convert the dictionary into a single JSON string
-        json_output = json.dumps(collection_data, indent=4, default=str)
-        for i in collection_data[0].keys():
-            if i['username'] == request.form['username']:
-                if i['password'] == request.form['password']:
-                    user_match = True
-                    break
-        if user_match:
-            return flask.render_template('login.html',username=i["username"],image=i["image"])
-        else:
-            return flask.render_template('login.html',fail=True)
+        try:
+            print(request.form)
+            user_match = False
+            docs = users.stream()
+            collection_data = {doc.id: doc.to_dict() for doc in docs}
+            global json_output
+            # 3. Convert the dictionary into a single JSON string
+            json_output = json.dumps(collection_data, indent=4, default=str)
+            for i in collection_data[0].keys():
+                if i['username'] == request.form['username']:
+                    if i['password'] == request.form['password']:
+                        user_match = True
+                        break
+            if user_match:
+                return flask.render_template('login.html',username=i["username"],image=i["image"])
+            else:
+                return flask.render_template('login.html',fail=True)
+        except Exception as e:
+            return jsonify({"error": str(e)})
 @app.errorhandler(404)
 def page_not_found(e):
     return flask.render_template('404.html',error=e), 404
