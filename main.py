@@ -5,13 +5,13 @@ from argon2.exceptions import VerifyMismatchError, VerificationError, InvalidHas
 db=firestore.Client(database="talko-database")
 users=db.collection('users')
 import flask
+import dotenv
 from flask import *
 app = Flask(__name__)
+dotenv.load_dotenv()
+app.secret_key=os.getenv('SECRET_KEY')
 _ph = PasswordHasher()
 doc = users.document("c8R6YmSTWw7kOoqWzPC8")
-doc.update({
-    "0.password": "$argon2i$v=19$m=16,t=2,p=1$b3JoSFBIc3ZEZHJvV1lnbg$6lXF7lJQMUanY9caXjx/Rw"
-})
 userdata = [{"username":"admin","password":"hello"},{"username":"test","password":"testing1234"}]
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -59,31 +59,37 @@ def login():
                     pass
             except Exception:
                 pass
-
-            return flask.render_template('login.html',
-                                         username=found_user.get('username'),
-                                         image=found_user.get('image'))
+            session['logged_in'] = True
+            session['username'] = found_user.get('username')
+            session['image'] = found_user.get('image')
+            response = flask.make_response(flask.render_template('login.html', success=True))
+            return response
     except (VerifyMismatchError, VerificationError, InvalidHashError):
         # verification failed; fall through to show generic failure
         pass
 
     return flask.render_template('login.html', fail=True)
-@app.route("/data")
-def data():
-    docs = users.stream()
-
-    # 2. Build a dictionary mapping each ID to its JSON document data
-    collection_data = [{doc.id: doc.to_dict() for doc in docs},{"version":"new"}]
-    global json_output
-    # 3. Convert the dictionary into a single JSON string
-    json_output = json.dumps(collection_data, indent=4, default=str)
-
-    print(json_output)
-    return jsonify(json_output)
+# @app.route("/data")
+# def data():
+#     docs = users.stream()
+#
+#     # 2. Build a dictionary mapping each ID to its JSON document data
+#     collection_data = [{doc.id: doc.to_dict() for doc in docs},{"version":"new"}]
+#     global json_output
+#     # 3. Convert the dictionary into a single JSON string
+#     json_output = json.dumps(collection_data, indent=4, default=str)
+#
+#     print(json_output)
+#     return jsonify(json_output)
 @app.route('/')
 def hello_world():
     return flask.render_template('index.html')
-
+@app.route('/logout')
+def logout():
+    session.pop('logged_in', None)
+    session.pop('username', None)
+    session.pop('image', None)
+    return flask.redirect('/')
 @app.errorhandler(404)
 def page_not_found(e):
     return flask.render_template('404.html',error=e), 404
