@@ -24,7 +24,7 @@
     <a href="/signup" class="profile-name login">Sign up</a>
   <!-- Profile Container -->
   <div class="profile-container">
-    <img src="/static/signed-out.jpg" alt="A grayscale icon of a signed out user." class="profile-img">
+    <img src="{{ image | default('/static/signed-out.jpg') }}" alt="{{ 'A small profile image of the user', '~ username ~ ' | default('A grayscale icon of a signed out user.') }}" class="profile-img">
     <span class="profile-name">{{ username | default("Signed out") }}</span>
   </div>
 </header>
