@@ -43,11 +43,11 @@
 <form action="/login" method="post">
 <label for="username">Enter your username: <span class="required-icon">*</span></label>
     <br>
-    <input name="username" id="username" required type="text">
+    <input name="username" id="username" required autocomplete="current-password" type="text">
     <br>
     <label for="password">Enter your password: <span class="required-icon">*</span></label>
     <br>
-    <input name="password" id="password" required type="password">
+    <input name="password" id="password" autocomplete="current-password" required type="password">
     <br>
     <input type="submit" value="Sign in">
 </form>
