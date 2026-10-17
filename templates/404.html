@@ -22,6 +22,7 @@
   </a>
   </div>
     {% if session["logged_in"] %}
+         <a class="profile-name login" href="/dashboard">Dashboard</a>
     <form action="/logout" method="post" class="logout-form">
       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
       <button type="submit" class="profile-name login">Sign out</button>
