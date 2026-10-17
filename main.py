@@ -199,9 +199,12 @@ def create_post():
             blob = bucket.blob(f"avatars/{uuid.uuid4()}.{ext}")
             blob.upload_from_file(file, content_type=image_content_types[ext])
             image = blob.public_url
+
         posts.add({"title": request.form.get('title', ''), 'textContent': request.form.get('textContent', ''),'timestamp': firestore.SERVER_TIMESTAMP,"user":session['id'],"image":image})
+        return flask.jsonify({"success":True})
     except Exception as e:
-        return {"error":str(e)}
+        return flask.jsonify({"error":str(e)})
+
 
 @app.route('/api/posts')
 def api_posts():
