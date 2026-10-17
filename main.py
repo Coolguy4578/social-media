@@ -1,3 +1,4 @@
+import hashlib
 import os
 import secrets
 import uuid
@@ -6,7 +7,8 @@ import dotenv
 import google.cloud.firestore as firestore
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError, VerificationError, InvalidHashError
-from flask import Flask, abort, flash, redirect, render_template, request, session
+from flask import Flask, abort, flash, jsonify, redirect, render_template, request, session
+from google.api_core.exceptions import AlreadyExists
 from google.cloud import storage
 
 dotenv.load_dotenv()
@@ -17,10 +19,16 @@ if not app.secret_key:
     raise RuntimeError("SECRET_KEY environment variable is not set")
 
 db = firestore.Client(database="talko-database")
+# users/{user_id} = {username, password, image}
 users = db.collection('users')
-# All user records currently live as fields of this one document, keyed by user id
-USERS_DOC_ID = "c8R6YmSTWw7kOoqWzPC8"
+# usernames/{username_key(username)} = {user_id}; creating this document claims the username
+usernames = db.collection('usernames')
 _ph = PasswordHasher()
+
+
+def username_key(username):
+    # Usernames can contain characters that aren't valid in document IDs (like "/"), so hash them
+    return hashlib.sha256(username.encode()).hexdigest()
 
 # Content type is derived from the extension, never from the client. SVG is excluded
 # because it can carry scripts.
@@ -60,15 +68,14 @@ def csrf_protect():
 
 def find_user(username):
     """Return (user_id, record) for the given username, or (None, None)."""
-    for doc in users.stream():
-        doc_dict = doc.to_dict()
-        if not isinstance(doc_dict, dict):
-            continue
-        # Records are nested inside the document, keyed by user id
-        for user_id, record in doc_dict.items():
-            if isinstance(record, dict) and record.get('username') == username:
-                return user_id, record
-    return None, None
+    reservation = usernames.document(username_key(username)).get()
+    if not reservation.exists:
+        return None, None
+    user_id = reservation.get('user_id')
+    user_doc = users.document(user_id).get()
+    if not user_doc.exists:
+        return None, None
+    return user_id, user_doc.to_dict()
 
 
 def log_in(user_id, record):
@@ -101,15 +108,17 @@ def login():
     return render_template('login.html', success=True)
 
 
-@firestore.transactional
-def _add_user(transaction, doc_ref, user_id, record):
+def _add_user(user_id, record):
     """Add a user record unless the username is taken. Returns True on success."""
-    data = doc_ref.get(transaction=transaction).to_dict() or {}
-    for existing in data.values():
-        if isinstance(existing, dict) and existing.get('username') == record['username']:
-            return False
-    # merge=True writes only this user's field, so concurrent signups don't overwrite each other
-    transaction.set(doc_ref, {user_id: record}, merge=True)
+    batch = db.batch()
+    # create() fails if the document exists, and the batch is atomic, so a taken
+    # username means neither document is written
+    batch.create(usernames.document(username_key(record['username'])), {"user_id": user_id})
+    batch.create(users.document(user_id), record)
+    try:
+        batch.commit()
+    except AlreadyExists:
+        return False
     return True
 
 
@@ -145,7 +154,7 @@ def signup():
 
     new_user_id = str(uuid.uuid4())
     record = {"username": username, "password": _ph.hash(password), "image": blob.public_url}
-    if not _add_user(db.transaction(), users.document(USERS_DOC_ID), new_user_id, record):
+    if not _add_user(new_user_id, record):
         # Someone else claimed the username while the image was uploading
         blob.delete()
         flash('That username is already taken')
@@ -164,6 +173,61 @@ def hello_world():
 def logout():
     session.clear()
     return redirect('/')
+
+
+# --- One-off migration: remove this section once /admin/migrate-users has been run ---
+MIGRATION_DONE = db.collection('migrations').document('users_to_documents')
+
+
+def migrate_users_to_documents():
+    """Move users out of shared documents into users/{user_id}. Safe to run more than once."""
+    if MIGRATION_DONE.get().exists:
+        return {"status": "already done"}
+
+    # Old-format documents hold users as nested maps: {user_id: {username, password, image}}
+    legacy_docs = []
+    for doc in users.stream():
+        data = doc.to_dict() or {}
+        records = {k: v for k, v in data.items() if isinstance(v, dict) and 'username' in v}
+        if records:
+            legacy_docs.append((doc, data, records))
+
+    migrated, duplicate_user_ids = 0, []
+    for doc, data, records in legacy_docs:
+        for user_id, record in sorted(records.items()):
+            # set() is idempotent, so a run that is interrupted can simply be repeated
+            users.document(user_id).set(record)
+            reservation_ref = usernames.document(username_key(record['username']))
+            reservation = reservation_ref.get()
+            if reservation.exists and reservation.get('user_id') != user_id:
+                # The old code allowed duplicate usernames; only the first one keeps the name
+                duplicate_user_ids.append(user_id)
+            else:
+                reservation_ref.set({"user_id": user_id})
+            migrated += 1
+
+    # Back up and remove the old documents and record completion, all in one atomic batch
+    batch = db.batch()
+    for doc, data, records in legacy_docs:
+        batch.set(db.collection('users_legacy_backup').document(doc.id), data)
+        batch.delete(doc.reference)
+    batch.create(MIGRATION_DONE, {
+        "completed_at": firestore.SERVER_TIMESTAMP,
+        "migrated": migrated,
+        "duplicate_user_ids": duplicate_user_ids,
+    })
+    try:
+        batch.commit()
+    except AlreadyExists:
+        # Another request finished the migration at the same time
+        return {"status": "already done"}
+    return {"status": "migrated", "migrated": migrated, "duplicate_user_ids": duplicate_user_ids}
+
+
+@app.route('/admin/migrate-users')
+def migrate_users():
+    return jsonify(migrate_users_to_documents())
+# --- End of one-off migration ---
 
 
 @app.errorhandler(404)
