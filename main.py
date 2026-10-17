@@ -3,7 +3,7 @@ import json
 import os
 import secrets
 import uuid
-
+import datetime
 import dotenv
 import google.cloud.firestore as firestore
 from argon2 import PasswordHasher
@@ -11,7 +11,7 @@ from argon2.exceptions import VerifyMismatchError, VerificationError, InvalidHas
 from flask import Flask, abort, flash, make_response, redirect, render_template, request, session
 from google.api_core.exceptions import AlreadyExists
 from google.cloud import storage
-
+import flask
 dotenv.load_dotenv()
 
 app = Flask(__name__)
@@ -182,7 +182,14 @@ def redact_passwords(value):
         return {k: '[redacted]' if k == 'password' else redact_passwords(v) for k, v in value.items()}
     return value
 
-
+@app.route('/api/posts')
+def api_posts():
+    posts = db.collection('posts').stream()
+    query_desc = posts.order_by("created_at", direction=firestore.Query.DESCENDING)
+    post_data = []
+    for post in query_desc:
+        post_data.append(post.to_dict())
+    return flask.jsonify(post_data)
 @app.route('/admin/data', methods=['GET', 'POST'])
 def admin_data():
     # Kept out of the repo: set it from Secret Manager like SECRET_KEY
