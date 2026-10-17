@@ -101,16 +101,10 @@ def signup():
     if file and allowed_file(file.filename):
         # filename = flask.secure_filename(file.filename)
         storage_client = storage.Client()
-        bucket = storage_client.get_bucket('social-media-flask')
-        blob = bucket.blob(file.filename)
-
-        # 5. Upload directly from the Flask FileStorage stream object
-        # This keeps the image in memory instead of writing it to local disk
-        blob.upload_from_file(
-            file,
-            content_type=file.content_type
-        )
-        blob.make_public()
+        bucket = storage_client.bucket('social-media-flask')  # no metadata request, so no buckets.get needed
+        ext = os.path.splitext(file.filename)[1].lower()
+        blob = bucket.blob(f"avatars/{uuid.uuid4()}{ext}")
+        blob.upload_from_file(file, content_type=file.content_type)
         image_url = blob.public_url
         doc_ref = db.collection('users').document("c8R6YmSTWw7kOoqWzPC8")
         data = doc_ref.get().to_dict()
