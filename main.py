@@ -49,6 +49,13 @@ def allowed_file(filename):
     return file_extension(filename) in image_content_types
 
 
+@app.context_processor
+def utility_processor():
+    def add_flash_message(message, category="info"):
+        flash(message)
+        return ""  # Return an empty string so nothing prints out in the HTML
+
+    return dict(trigger_flash=add_flash_message)
 def csrf_token():
     if 'csrf_token' not in session:
         session['csrf_token'] = secrets.token_hex(32)
@@ -170,6 +177,14 @@ def hello_world():
     return render_template('index.html')
 
 
+@app.route('/dashboard')
+def dashboard():
+    if not session.get('logged_in'):
+        flash('You must be logged in to access the dashboard.')
+        return redirect('/login')
+    return render_template('dashboard.html')
+
+
 @app.route('/logout', methods=['POST'])
 def logout():
     session.clear()
@@ -215,6 +230,17 @@ def api_posts():
     for post in query_desc:
         post_data.append(post.to_dict())
     return flask.jsonify(post_data)
+
+
+@app.route('/api/users/<user_id>')
+def api_user(user_id):
+    user_doc = users.document(user_id).get()
+    if not user_doc.exists:
+        return flask.jsonify({"error": "user not found"}), 404
+    # Only public fields; never send the password hash
+    return flask.jsonify({"username": user_doc.get('username'), "image": user_doc.get('image')})
+
+
 @app.route('/admin/data', methods=['GET', 'POST'])
 def admin_data():
     # Kept out of the repo: set it from Secret Manager like SECRET_KEY
