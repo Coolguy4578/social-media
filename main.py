@@ -192,14 +192,16 @@ def create_post():
             image = None
         else:
             if not allowed_file(file.filename):
-                flash('Please upload an image file (' + ', '.join(image_content_types) + ')')
-                return redirect(request.url)
+                return {"error":"invalid image format"}
             ext = file_extension(file.filename)
             storage_client = storage.Client()
             bucket = storage_client.bucket('social-media-flask')  # no metadata request, so no buckets.get needed
             blob = bucket.blob(f"avatars/{uuid.uuid4()}.{ext}")
             blob.upload_from_file(file, content_type=image_content_types[ext])
-        posts.add({"title": request.form.get('title', ''), 'textContent': request.form.get('textContent', ''),'timestamp': firestore.SERVER_TIMESTAMP,"user":session['id'],"image":image}
+            image = blob.public_url
+        posts.add({"title": request.form.get('title', ''), 'textContent': request.form.get('textContent', ''),'timestamp': firestore.SERVER_TIMESTAMP,"user":session['id'],"image":image})
+    except Exception as e:
+        return {"error":str(e)}
 
 @app.route('/api/posts')
 def api_posts():
