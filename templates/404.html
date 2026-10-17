@@ -4,31 +4,35 @@
     <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
 <link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Talko - Page not found</title>
  <link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Condensed:ital,wght@0,400..700;1,400..700&family=Michroma&family=Momo+Trust+Display&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/static/stylesheets/index.css">
   <meta property="og:title" content="Talko - Share with care" />
 <meta property="og:type" content="website" />
-    <meta property="og:description" value="At Talko, we work tirelessly to make sure that your posts are shared with care. We love building experiences that transform the paradigm of social media, one bite at a time">
+    <meta property="og:description" content="At Talko, we work tirelessly to make sure that your posts are shared with care. We love building experiences that transform the paradigm of social media, one bite at a time">
 <meta property="og:url" content="https://wonder-hub.co/" />
 <meta property="og:image" content="https://wonder-hub.co/static/talko.png" />
 </head>
 <body>
 <!--<header><div class="logo-area"><a href="/"><img alt="A geometric logo for Talko. A speech bubble is also a colorful taco bursting with sharp, colorful shapes representing meat, tomatoes and various toppings. Below the icon is a wordmark that says 'Talko' and the last letter is a bright red. Underneath the wordmark is black text saying 'Share with care' and the slogan 'You do the talking, we'll do the cooking'." src="/static/talko.png" class="logo"></a></div><p>Signed out</p><div class="user-box"><img alt="A photo of a signed out user." src="/static/signed-out.jpg"></div></header>-->
 <header class="site-header">
-  <div class="logo"><a href="/">
+  <div class="logo-area"><a href="/">
     <img alt="A geometric logo for Talko. A speech bubble is also a colorful taco bursting with sharp, colorful shapes representing meat, tomatoes and various toppings. Below the icon is a wordmark that says 'Talko' and the last letter is a bright red. Underneath the wordmark is black text saying 'Share with care' and the slogan 'You do the talking, we'll do the cooking'." src="/static/talko.png" class="logo">
   </a>
   </div>
     {% if session["logged_in"] %}
-    <a href="/logout" class="profile-name login">Sign out</a>
+    <form action="/logout" method="post" class="logout-form">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <button type="submit" class="profile-name login">Sign out</button>
+    </form>
     {% else %}
 <a href="/login" class="profile-name login">Login</a>
     <a href="/signup" class="profile-name login">Sign up</a>
     {% endif %}
   <!-- Profile Container -->
   <div class="profile-container">
-    <img src="{{ session['image'] | default('/static/signed-out.jpg') }}" alt="{{ 'A small profile image of the user', '~ username ~ ' | default('A grayscale icon of a signed out user.') }}" class="profile-img">
+    <img src="{{ session['image'] | default('/static/signed-out.jpg') }}" alt="{{ ('Profile image of ' ~ session['username']) if session['username'] else 'A grayscale icon of a signed out user.' }}" class="profile-img">
     <span class="profile-name">{{ session['username'] | default("Signed out") }}</span>
   </div>
 </header>
