@@ -162,7 +162,7 @@ def signup():
         return redirect(request.url)
 
     log_in(new_user_id, record)
-    return redirect("/")
+    return redirect("/dashboard")
 
 
 @app.route('/')

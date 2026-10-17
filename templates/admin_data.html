@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <link rel="icon" type="image/png" sizes="32x32" href="/static/favicon-32x32.png">
+<link rel="icon" type="image/png" sizes="16x16" href="/static/favicon-16x16.png">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex">
+    <title>Talko - Firestore data</title>
+ <link href="https://fonts.googleapis.com/css2?family=Libre+Caslon+Condensed:ital,wght@0,400..700;1,400..700&family=Michroma&family=Momo+Trust+Display&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/static/stylesheets/index.css">
+</head>
+<body>
+<h1 class="cool-font michroma-regular"><span class="talko-wordmark">Talk<span class="last-letter">o</span></span> - Firestore data</h1>
+{% if data %}
+<pre class="admin-data">{{ data }}</pre>
+{% else %}
+{% if fail %}
+<p class="flash-message">Incorrect password</p>
+{% endif %}
+<form action="/admin/data" method="post">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <label for="password">Admin password: <span class="required-icon">*</span></label>
+    <br>
+    <input name="password" id="password" autocomplete="current-password" required type="password">
+    <br>
+    <input type="submit" value="View data">
+</form>
+{% endif %}
+</body>
+</html>
