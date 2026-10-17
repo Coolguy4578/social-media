@@ -7,31 +7,6 @@
 .cool-font {
     font-family: 'Michroma', sans-serif;
 }
-.header{
-
-  font-size: 80px;
-  font-weight: 900;
-  text-transform: uppercase;
-
-  /* 1. Set the background image */
-  background-image: url('/static/taco.jpg');
-  background-size: cover;
-  background-position: center;
-
-  /* 2. Clip the background to the text boundary */
-  -webkit-background-clip: text;
-  background-clip: text;
-
-  /* 3. Make the actual text color transparent to reveal the image underneath */
-  -webkit-text-fill-color: transparent;
-  color: transparent;
-    background-color: yellow;
-
-
-    color: #0e0d0e;
-    font-size: 50pt;
-
-}
 header {
     display: flex;
   justify-content: flex-start;
@@ -134,4 +109,20 @@ form {
 .login{
     text-decoration: none;
     color: white;
+}
+/* Sign out is a POST form styled to look like the other header links */
+.logout-form {
+    border: none;
+    margin: 0;
+}
+.logout-form button {
+    background: none;
+    border: none;
+    padding: 0;
+    font: inherit;
+    cursor: pointer;
+}
+.flash-message {
+    color: #f46753;
+    font-family: Helvetica, Arial, sans-serif;
 }
