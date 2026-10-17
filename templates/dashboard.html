@@ -93,7 +93,14 @@
          postDiv.appendChild(img)
        }
        const author = authors[post.user]
-       postDiv.appendChild(el("p", "Posted by " + (author ? author.username : "an unknown user")))
+         let profileDiv = el("div")
+         profileDiv.innerHTML = `
+          <div class="profile-container">
+    <img src="${author.image}" alt="Profile image of ${author.username}" class="profile-img">
+    <span class="profile-name">${author.username}</span>
+  </div>`
+         postDiv.appendChild(profileDiv)
+       // postDiv.appendChild(el("p", "Posted by " + (author ? author.username : "an unknown user")))
        postContainer.appendChild(postDiv)
      })
    }
