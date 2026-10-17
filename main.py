@@ -88,7 +88,7 @@ def allowed_file(filename):
 def signup():
     if request.method == 'GET':
         return flask.render_template('signup.html')
-    request_json = flask.request.get_json()
+
     if 'image' not in request.files:
         flash('No file part')
         return redirect(request.url)
