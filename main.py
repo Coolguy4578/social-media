@@ -181,6 +181,25 @@ def redact_passwords(value):
     if isinstance(value, dict):
         return {k: '[redacted]' if k == 'password' else redact_passwords(v) for k, v in value.items()}
     return value
+@app.post('/api/create-post')
+def create_post():
+    try:
+        posts = db.collection('posts')
+        file = request.files.get('image')
+        # If the user does not select a file, the browser submits an
+        # empty file without a filename.
+        if not file or file.filename == '':
+            image = None
+        else:
+            if not allowed_file(file.filename):
+                flash('Please upload an image file (' + ', '.join(image_content_types) + ')')
+                return redirect(request.url)
+            ext = file_extension(file.filename)
+            storage_client = storage.Client()
+            bucket = storage_client.bucket('social-media-flask')  # no metadata request, so no buckets.get needed
+            blob = bucket.blob(f"avatars/{uuid.uuid4()}.{ext}")
+            blob.upload_from_file(file, content_type=image_content_types[ext])
+        posts.add({"title": request.form.get('title', ''), 'textContent': request.form.get('textContent', ''),'timestamp': firestore.SERVER_TIMESTAMP,"user":session['id'],"image":image}
 
 @app.route('/api/posts')
 def api_posts():
