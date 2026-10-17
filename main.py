@@ -7,7 +7,7 @@ import dotenv
 import google.cloud.firestore as firestore
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError, VerificationError, InvalidHashError
-from flask import Flask, abort, flash, jsonify, redirect, render_template, request, session
+from flask import Flask, abort, flash, redirect, render_template, request, session
 from google.api_core.exceptions import AlreadyExists
 from google.cloud import storage
 
@@ -173,61 +173,6 @@ def hello_world():
 def logout():
     session.clear()
     return redirect('/')
-
-
-# --- One-off migration: remove this section once /admin/migrate-users has been run ---
-MIGRATION_DONE = db.collection('migrations').document('users_to_documents')
-
-
-def migrate_users_to_documents():
-    """Move users out of shared documents into users/{user_id}. Safe to run more than once."""
-    if MIGRATION_DONE.get().exists:
-        return {"status": "already done"}
-
-    # Old-format documents hold users as nested maps: {user_id: {username, password, image}}
-    legacy_docs = []
-    for doc in users.stream():
-        data = doc.to_dict() or {}
-        records = {k: v for k, v in data.items() if isinstance(v, dict) and 'username' in v}
-        if records:
-            legacy_docs.append((doc, data, records))
-
-    migrated, duplicate_user_ids = 0, []
-    for doc, data, records in legacy_docs:
-        for user_id, record in sorted(records.items()):
-            # set() is idempotent, so a run that is interrupted can simply be repeated
-            users.document(user_id).set(record)
-            reservation_ref = usernames.document(username_key(record['username']))
-            reservation = reservation_ref.get()
-            if reservation.exists and reservation.get('user_id') != user_id:
-                # The old code allowed duplicate usernames; only the first one keeps the name
-                duplicate_user_ids.append(user_id)
-            else:
-                reservation_ref.set({"user_id": user_id})
-            migrated += 1
-
-    # Back up and remove the old documents and record completion, all in one atomic batch
-    batch = db.batch()
-    for doc, data, records in legacy_docs:
-        batch.set(db.collection('users_legacy_backup').document(doc.id), data)
-        batch.delete(doc.reference)
-    batch.create(MIGRATION_DONE, {
-        "completed_at": firestore.SERVER_TIMESTAMP,
-        "migrated": migrated,
-        "duplicate_user_ids": duplicate_user_ids,
-    })
-    try:
-        batch.commit()
-    except AlreadyExists:
-        # Another request finished the migration at the same time
-        return {"status": "already done"}
-    return {"status": "migrated", "migrated": migrated, "duplicate_user_ids": duplicate_user_ids}
-
-
-@app.route('/admin/migrate-users')
-def migrate_users():
-    return jsonify(migrate_users_to_documents())
-# --- End of one-off migration ---
 
 
 @app.errorhandler(404)
