@@ -99,7 +99,7 @@ def signup():
         flash('No selected file')
         return redirect(request.url)
     if file and allowed_file(file.filename):
-        filename = flask.secure_filename(file.filename)
+        # filename = flask.secure_filename(file.filename)
         storage_client = storage.Client()
         bucket = storage_client.get_bucket('social-media-flask')
         blob = bucket.blob(file.filename)
