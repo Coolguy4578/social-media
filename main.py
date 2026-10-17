@@ -1,4 +1,5 @@
 import hashlib
+import json
 import os
 import secrets
 import uuid
@@ -7,7 +8,7 @@ import dotenv
 import google.cloud.firestore as firestore
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError, VerificationError, InvalidHashError
-from flask import Flask, abort, flash, redirect, render_template, request, session
+from flask import Flask, abort, flash, make_response, redirect, render_template, request, session
 from google.api_core.exceptions import AlreadyExists
 from google.cloud import storage
 
@@ -173,6 +174,37 @@ def hello_world():
 def logout():
     session.clear()
     return redirect('/')
+
+
+def redact_passwords(value):
+    """Return a copy of Firestore data with every 'password' field hidden."""
+    if isinstance(value, dict):
+        return {k: '[redacted]' if k == 'password' else redact_passwords(v) for k, v in value.items()}
+    return value
+
+
+@app.route('/admin/data', methods=['GET', 'POST'])
+def admin_data():
+    # Kept out of the repo: set it from Secret Manager like SECRET_KEY
+    admin_hash = os.getenv('ADMIN_PASSWORD_HASH')
+    if not admin_hash:
+        abort(404)
+    if request.method == 'GET':
+        return render_template('admin_data.html')
+
+    try:
+        _ph.verify(admin_hash, request.form.get('password', ''))
+    except (VerifyMismatchError, VerificationError, InvalidHashError):
+        return render_template('admin_data.html', fail=True), 403
+
+    data = {
+        collection.id: {doc.id: redact_passwords(doc.to_dict()) for doc in collection.stream()}
+        for collection in db.collections()
+    }
+    response = make_response(render_template(
+        'admin_data.html', data=json.dumps(data, indent=2, default=str, ensure_ascii=False)))
+    response.headers['Cache-Control'] = 'no-store'
+    return response
 
 
 @app.errorhandler(404)
