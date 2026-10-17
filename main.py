@@ -196,14 +196,16 @@ def create_post():
             ext = file_extension(file.filename)
             storage_client = storage.Client()
             bucket = storage_client.bucket('social-media-flask')  # no metadata request, so no buckets.get needed
-            blob = bucket.blob(f"avatars/{uuid.uuid4()}.{ext}")
+            blob = bucket.blob(f"posts/{uuid.uuid4()}.{ext}")
             blob.upload_from_file(file, content_type=image_content_types[ext])
             image = blob.public_url
 
         posts.add({"title": request.form.get('title', ''), 'textContent': request.form.get('textContent', ''),'timestamp': firestore.SERVER_TIMESTAMP,"user":session['id'],"image":image})
         return flask.jsonify({"success":True})
+    except KeyError as e:
+        return flask.jsonify({"error":str(e)}), 400
     except Exception as e:
-        return flask.jsonify({"error":str(e)})
+        return flask.jsonify({"error":str(e)}), 500
 
 
 @app.route('/api/posts')
