@@ -184,8 +184,7 @@ def redact_passwords(value):
 
 @app.route('/api/posts')
 def api_posts():
-    posts = db.collection('posts').stream()
-    query_desc = posts.order_by("created_at", direction=firestore.Query.DESCENDING)
+    query_desc = db.collection('posts').order_by("timestamp", direction=firestore.Query.DESCENDING).stream()
     post_data = []
     for post in query_desc:
         post_data.append(post.to_dict())
