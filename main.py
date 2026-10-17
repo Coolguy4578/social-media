@@ -1,7 +1,9 @@
 import os
 from argon2 import PasswordHasher
 import google.cloud.firestore as firestore
+from google.cloud import storage
 from argon2.exceptions import VerifyMismatchError, VerificationError, InvalidHashError
+import uuid
 db=firestore.Client(database="talko-database")
 users=db.collection('users')
 import flask
@@ -33,15 +35,18 @@ def login():
         if not isinstance(doc_dict, dict):
             continue
         # Iterate nested records inside the document (e.g. keys like "0", "1", etc.)
+
         for record in doc_dict.values():
             if not isinstance(record, dict):
                 continue
             if record.get('username') == username_form:
                 found_user = record
+
+                print(record)
                 break
         if found_user:
             break
-
+        key = [k for k, v in doc_dict.items() if v == found_user][0]
     # If user not found -> authentication fail
     if not found_user:
         # You can render a generic failure message to avoid user enumeration
@@ -62,6 +67,7 @@ def login():
             session['logged_in'] = True
             session['username'] = found_user.get('username')
             session['image'] = found_user.get('image')
+            session['id'] = key
             response = flask.make_response(flask.render_template('login.html', success=True))
             return response
     except (VerifyMismatchError, VerificationError, InvalidHashError):
@@ -69,6 +75,54 @@ def login():
         pass
 
     return flask.render_template('login.html', fail=True)
+image_extensions = [
+    "jpg", "jpeg", "png", "gif", "webp",
+    "tiff", "tif", "bmp", "svg", "heic",
+    "heif", "ico", "avif"
+]
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in image_extensions
+@app.route("/signup", methods=['GET', 'POST'])
+def signup():
+    if request.method == 'GET':
+        return flask.render_template('signup.html')
+    request_json = flask.request.get_json()
+    if 'image' not in request.files:
+        flash('No file part')
+        return redirect(request.url)
+    file = request.files['image']
+    # If the user does not select a file, the browser submits an
+    # empty file without a filename.
+    if file.filename == '':
+        flash('No selected file')
+        return redirect(request.url)
+    if file and allowed_file(file.filename):
+        filename = flask.secure_filename(file.filename)
+        storage_client = storage.Client()
+        bucket = storage_client.get_bucket('social-media-flask')
+        blob = bucket.blob(file.filename)
+
+        # 5. Upload directly from the Flask FileStorage stream object
+        # This keeps the image in memory instead of writing it to local disk
+        blob.upload_from_file(
+            file,
+            content_type=file.content_type
+        )
+        blob.make_public()
+        image_url = blob.public_url
+        doc_ref = db.collection('users').document("c8R6YmSTWw7kOoqWzPC8")
+        data = doc_ref.get().to_dict()
+        newUserId = str(uuid.uuid4())
+        data[newUserId] = {"username": request.form['username'],"password":_ph.hash(request.form['password']),"image":image_url}
+        doc_ref.set(data)
+        session['logged_in'] = True
+        session['username'] = request.form['username']
+        session['image'] = image_url
+        session['id'] = newUserId
+        return redirect("/")
+
 # @app.route("/data")
 # def data():
 #     docs = users.stream()
@@ -89,6 +143,7 @@ def logout():
     session.pop('logged_in', None)
     session.pop('username', None)
     session.pop('image', None)
+    session.pop('id', None)
     return flask.redirect('/')
 @app.errorhandler(404)
 def page_not_found(e):
