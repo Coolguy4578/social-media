@@ -126,3 +126,8 @@ form {
     color: #f46753;
     font-family: Helvetica, Arial, sans-serif;
 }
+.admin-data {
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+    font-size: 13px;
+}
