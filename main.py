@@ -196,6 +196,33 @@ def redact_passwords(value):
     if isinstance(value, dict):
         return {k: '[redacted]' if k == 'password' else redact_passwords(v) for k, v in value.items()}
     return value
+@firestore.transactional
+def increment_like_counter(transaction,doc_ref,like_or_unlike):
+    snapshot = doc_ref.get(transaction=transaction)
+    current_likes = snapshot.to_dict().get('likes')
+    if like_or_unlike:
+        new_likes = current_likes + 1
+    else:
+        new_likes = current_likes - 1
+
+    # 2. Write the incremented value back
+    transaction.update(doc_ref, {"likes": new_likes})
+    return new_likes
+
+@app.post('/like')
+def like():
+    post = request.form['post-id']
+    if not post:
+        return {"error":"post id is required"}
+    transaction = db.transaction()
+    return flask.jsonify({"likes": increment_like_counter(transaction, post,True)})
+@app.post('/unlike')
+def like():
+    post = request.form['post-id']
+    if not post:
+        return {"error":"post id is required"}
+    transaction = db.transaction()
+    return flask.jsonify({"likes": increment_like_counter(transaction, post,False)})
 @app.post('/api/create-post')
 def create_post():
     try:
@@ -216,7 +243,7 @@ def create_post():
             blob.upload_from_file(file, content_type=image_content_types[ext])
             image = blob.public_url
             print(image)
-        posts.add({"title": request.form.get('title', ''), 'textContent': request.form.get('textContent', ''),'timestamp': firestore.SERVER_TIMESTAMP,"user": session['id'],"image":image})
+        posts.add({"title": request.form.get('title', ''), 'textContent': request.form.get('textContent', ''),'timestamp': firestore.SERVER_TIMESTAMP,"user": session['id'],"image":image,"likes":0})
         return redirect("/dashboard")
     except KeyError as e:
         return flask.jsonify({"error":str(e)}), 400
@@ -229,7 +256,7 @@ def api_posts():
     query_desc = db.collection('posts').order_by("timestamp", direction=firestore.Query.DESCENDING).stream()
     post_data = []
     for post in query_desc:
-        post_data.append(post.to_dict())
+        post_data.append({**post.to_dict(), "id": post.id})
     return flask.jsonify(post_data)
 
 
