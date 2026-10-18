@@ -55,24 +55,32 @@
 
 </div>
  <script>
-     async function like(id,likeButton){
-         let likeCount = await fetch('/like',{
-             method: 'POST',
-             body: URLSearchParams({"post-id":id})
-         })
-             .then (response = await likeCount.json());
-            likeButton.innerText = `❤️${response.likes} likes`;
-            likeButton.onclick = `unlike(${id},this)`
+   const csrfToken = "{{ csrf_token() }}"
+
+   function showLikes(likeButton, likes, liked) {
+     likeButton.textContent = `${liked ? "❤️" : "🤍"} ${likes} ${likes === 1 ? "like" : "likes"}`
+     likeButton.classList.toggle("liked", liked)
+     likeButton.setAttribute("aria-pressed", liked)
+   }
+
+   // Likes the post if the viewer hasn't yet, otherwise unlikes it
+   async function toggleLike(id, likeButton) {
+     const liked = likeButton.classList.contains("liked")
+     likeButton.disabled = true
+     try {
+       const res = await fetch(liked ? "/unlike" : "/like", {
+         method: "POST",
+         body: new URLSearchParams({"post-id": id, "csrf_token": csrfToken})
+       })
+       if (!res.ok) throw new Error("like request returned " + res.status)
+       const response = await res.json()
+       showLikes(likeButton, response.likes, response.liked)
+     } catch (e) {
+       console.error(e)
+     } finally {
+       likeButton.disabled = false
      }
-          async function unlike(id,likeButton){
-         let likeCount = await fetch('/unlike',{
-             method: 'POST',
-             body: URLSearchParams({"post-id":id})
-         })
-             .then (response = await likeCount.json());
-            likeButton.innerText = `❤️${response.likes} likes`;
-            likeButton.onclick = `like(${id},this)`
-     }
+   }
    async function getJson(url) {
      const res = await fetch(url)
      if (!res.ok) throw new Error(url + " returned " + res.status)
@@ -114,12 +122,12 @@
        postDiv.className = "post"
        postDiv.appendChild(el("h2", post.title))
        postDiv.appendChild(el("p", post.textContent))
-         let likeButton = document.createElement("button")
-         likeButton.class = "like-button"
-         likeButton.innerText = `❤️ ${post.likes} likes`
-         likeButton.onclick = `like(${post.id},this)`
+         const likeButton = el("button")
+         likeButton.type = "button"
+         likeButton.className = "like-button"
+         showLikes(likeButton, post.likes ?? 0, post.liked)
+         likeButton.onclick = () => toggleLike(post.id, likeButton)
          postDiv.appendChild(likeButton)
-         // postDiv.appendChild(el("button",`❤️ ${post.likes} likes`))
        if (post.image) {
          const img = el("img")
          img.src = post.image
@@ -127,12 +135,16 @@
          postDiv.appendChild(img)
        }
        const author = authors[post.user]
-         let profileDiv = el("div")
-         profileDiv.innerHTML = `
-          <div class="profile-container-post">
-    <img src="${author.image}" alt="Profile image of ${author.username}" class="profile-img-post">
-    <span class="profile-name-post">${author.username}</span>
-  </div>`
+         const profileDiv = el("div")
+         profileDiv.className = "profile-container-post"
+         const profileImg = el("img")
+         profileImg.src = author ? author.image : "/static/signed-out.jpg"
+         profileImg.alt = author ? "Profile image of " + author.username : "A grayscale icon of an unknown user."
+         profileImg.className = "profile-img-post"
+         profileDiv.appendChild(profileImg)
+         const profileName = el("span", author ? author.username : "Unknown user")
+         profileName.className = "profile-name-post"
+         profileDiv.appendChild(profileName)
          postDiv.appendChild(profileDiv)
        // postDiv.appendChild(el("p", "Posted by " + (author ? author.username : "an unknown user")))
        postContainer.appendChild(postDiv)

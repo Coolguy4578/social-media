@@ -96,10 +96,9 @@ form {
 .like-button {
     border: 2px solid red;
     border-radius: 12px;
-    width: 30px;
-    height: 10px;
+
 }
-like-button:active{
+.like-button:active{
     background-color: hotpink;
 }
 /* Base card style for the entire post */
