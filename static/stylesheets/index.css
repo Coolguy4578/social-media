@@ -127,7 +127,7 @@ form {
 }
 
 /* Profile username styling */
-.profile-name {
+.profile-name-post {
   font-weight: 700;
   color: #1c1e21;
   font-size: 0.95rem;
@@ -152,7 +152,7 @@ form {
 
 /* Making the post image responsive and seamless */
 .post img:not(.profile-img) {
-  width: 100%;
+  width: 75%;
   height: auto;
   display: block;
   object-fit: cover;
