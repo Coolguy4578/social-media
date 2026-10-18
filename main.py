@@ -197,32 +197,48 @@ def redact_passwords(value):
         return {k: '[redacted]' if k == 'password' else redact_passwords(v) for k, v in value.items()}
     return value
 @firestore.transactional
-def increment_like_counter(transaction,doc_ref,like_or_unlike):
+def increment_like_counter(transaction, doc_ref, user_id, like_or_unlike):
+    """Like or unlike a post for one user. Returns the new count, or None if the post doesn't exist."""
     snapshot = doc_ref.get(transaction=transaction)
-    current_likes = snapshot.to_dict().get('likes')
-    if like_or_unlike:
-        new_likes = current_likes + 1
-    else:
-        new_likes = current_likes - 1
+    if not snapshot.exists:
+        return None
+    post = snapshot.to_dict()
+    # Older posts were created before these fields existed
+    current_likes = post.get('likes') or 0
+    liked_by = post.get('likedBy') or []
 
-    # 2. Write the incremented value back
-    transaction.update(doc_ref, {"likes": new_likes})
-    return new_likes
+    # likedBy records who has liked the post, so each user counts once and unlike can't go below zero
+    if like_or_unlike and user_id not in liked_by:
+        transaction.update(doc_ref, {"likes": current_likes + 1, "likedBy": firestore.ArrayUnion([user_id])})
+        return current_likes + 1
+    if not like_or_unlike and user_id in liked_by:
+        new_likes = max(current_likes - 1, 0)
+        transaction.update(doc_ref, {"likes": new_likes, "likedBy": firestore.ArrayRemove([user_id])})
+        return new_likes
+    return current_likes
+
+
+def _set_like(like_or_unlike):
+    if not session.get('logged_in'):
+        return flask.jsonify({"error": "you must be logged in"}), 401
+    post_id = request.form.get('post-id', '')
+    if not post_id:
+        return flask.jsonify({"error": "post id is required"}), 400
+    doc_ref = db.collection('posts').document(post_id)
+    likes = increment_like_counter(db.transaction(), doc_ref, session['id'], like_or_unlike)
+    if likes is None:
+        return flask.jsonify({"error": "post not found"}), 404
+    return flask.jsonify({"likes": likes, "liked": like_or_unlike})
+
 
 @app.post('/like')
 def like():
-    post = request.form['post-id']
-    if not post:
-        return {"error":"post id is required"}
-    transaction = db.transaction()
-    return flask.jsonify({"likes": increment_like_counter(transaction, post,True)})
+    return _set_like(True)
+
+
 @app.post('/unlike')
 def unlike():
-    post = request.form['post-id']
-    if not post:
-        return {"error":"post id is required"}
-    transaction = db.transaction()
-    return flask.jsonify({"likes": increment_like_counter(transaction, post,False)})
+    return _set_like(False)
 @app.post('/api/create-post')
 def create_post():
     try:
@@ -256,7 +272,12 @@ def api_posts():
     query_desc = db.collection('posts').order_by("timestamp", direction=firestore.Query.DESCENDING).stream()
     post_data = []
     for post in query_desc:
-        post_data.append({**post.to_dict(), "id": post.id})
+        data = post.to_dict()
+        # Send whether the viewer liked it rather than the full list of who did
+        liked_by = data.pop('likedBy', None) or []
+        data['likes'] = data.get('likes') or 0
+        data['liked'] = session.get('id') in liked_by
+        post_data.append({**data, "id": post.id})
     return flask.jsonify(post_data)
 
 
