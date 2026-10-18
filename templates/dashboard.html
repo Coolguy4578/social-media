@@ -55,6 +55,24 @@
 
 </div>
  <script>
+     async function like(id,likeButton){
+         let likeCount = await fetch('/like',{
+             method: 'POST',
+             body: URLSearchParams({"post-id":id})
+         })
+             .then (response = await likeCount.json());
+            likeButton.innerText = `❤️${response.likes} likes`;
+            likeButton.onclick = `unlike(${id},this)`
+     }
+          async function unlike(id,likeButton){
+         let likeCount = await fetch('/unlike',{
+             method: 'POST',
+             body: URLSearchParams({"post-id":id})
+         })
+             .then (response = await likeCount.json());
+            likeButton.innerText = `❤️${response.likes} likes`;
+            likeButton.onclick = `like(${id},this)`
+     }
    async function getJson(url) {
      const res = await fetch(url)
      if (!res.ok) throw new Error(url + " returned " + res.status)
@@ -96,6 +114,12 @@
        postDiv.className = "post"
        postDiv.appendChild(el("h2", post.title))
        postDiv.appendChild(el("p", post.textContent))
+         let likeButton = document.createElement("button")
+         likeButton.class = "like-button"
+         likeButton.innerText = `❤️ ${post.likes} likes`
+         likeButton.onclick = `like(${post.id},this)`
+         postDiv.appendChild(likeButton)
+         // postDiv.appendChild(el("button",`❤️ ${post.likes} likes`))
        if (post.image) {
          const img = el("img")
          img.src = post.image
