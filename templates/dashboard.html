@@ -42,6 +42,16 @@
 </header>
       <h1 class="cool-font michroma-regular"><span class="talko-wordmark">Talk<span class="last-letter">o</span></span> - Dashboard</h1>
 <div class="posts" id="postContainer">
+    <form action="/api/create-post" method="post" class="post-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+        <label for="post-title">Post Title <span class="required-icon">*</span></label>
+        <input type="text" name="title" placeholder="Post Title" id="post-title" required>
+        <label for="post-content">Post Content<span class="required-icon">*</span></label>
+        <input type="text" name="textContent" placeholder="Post Title" id="post-content" required>
+        <label for="post-image">Upload an image to your post.</label>
+        <input type="file" name="image" id="post-image">
+        <input type="submit" value="Submit">
+    </form>
 
 </div>
  <script>

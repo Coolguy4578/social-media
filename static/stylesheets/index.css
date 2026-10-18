@@ -86,7 +86,13 @@ form {
   object-fit: cover; /* Prevents the image from stretching */
   border: 2px solid #000000; /* Optional: futuristic border color */
 }
-
+.post-form {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 12px;
+    border: 1px solid #2ef172;
+}
 /* Profile Name Styling */
 .profile-name {
   font-size: 14px;
