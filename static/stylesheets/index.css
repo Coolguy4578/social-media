@@ -93,6 +93,15 @@ form {
     gap: 12px;
     border: 1px solid #2ef172;
 }
+.like-button {
+    border: 2px solid red;
+    border-radius: 12px;
+    width: 30px;
+    height: 10px;
+}
+like-button:active{
+    background-color: hotpink;
+}
 /* Base card style for the entire post */
 .post {
   background-color: #ffffff;
