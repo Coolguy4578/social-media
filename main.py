@@ -215,7 +215,7 @@ def create_post():
             blob.upload_from_file(file, content_type=image_content_types[ext])
             image = blob.public_url
 
-        posts.add({"title": request.form.get('title', ''), 'textContent': request.form.get('textContent', ''),'timestamp': firestore.SERVER_TIMESTAMP,"user": ['id'],"image":image})
+        posts.add({"title": request.form.get('title', ''), 'textContent': request.form.get('textContent', ''),'timestamp': firestore.SERVER_TIMESTAMP,"user": session['id'],"image":image})
         return redirect("/dashboard")
     except KeyError as e:
         return flask.jsonify({"error":str(e)}), 400
@@ -230,6 +230,22 @@ def api_posts():
     for post in query_desc:
         post_data.append(post.to_dict())
     return flask.jsonify(post_data)
+
+
+# TEMPORARY: one-off fix for the test post saved with "user": ['id'] instead of session['id'].
+# Remove after visiting it once while logged in as the post's author.
+@app.route('/fix-test-post')
+def fix_test_post():
+    if not session.get('logged_in'):
+        return redirect('/login')
+    query = db.collection('posts').where(filter=firestore.FieldFilter('textContent', '==', 'Test post123'))
+    fixed = []
+    for post in query.stream():
+        # Only touch the misconfigured post, never one that already has a real user ID
+        if post.get('user') == ['id']:
+            post.reference.update({'user': session['id']})
+            fixed.append(post.id)
+    return flask.jsonify({"fixed": fixed, "user": session['id']})
 
 
 @app.route('/api/users/<user_id>')
