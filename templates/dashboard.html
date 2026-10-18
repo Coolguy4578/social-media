@@ -105,8 +105,8 @@
        const author = authors[post.user]
          let profileDiv = el("div")
          profileDiv.innerHTML = `
-          <div class="profile-container">
-    <img src="${author.image}" alt="Profile image of ${author.username}" class="profile-img">
+          <div class="profile-container-post">
+    <img src="${author.image}" alt="Profile image of ${author.username}" class="profile-img-post">
     <span class="profile-name">${author.username}</span>
   </div>`
          postDiv.appendChild(profileDiv)
