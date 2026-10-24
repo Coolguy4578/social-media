@@ -134,7 +134,11 @@ def _add_user(user_id, record):
 def signup():
     if request.method == 'GET':
         return render_template('signup.html')
+    bio = request.form.get('bio', '')
 
+    if len(bio) > 500:
+        flash('Bio too long (Maximum 500 characters)')
+        return redirect(request.url)
     username = request.form.get('username', '').strip()
     password = request.form.get('password', '')
     if not username or not password:
@@ -161,7 +165,7 @@ def signup():
     blob.upload_from_file(file, content_type=image_content_types[ext])
 
     new_user_id = str(uuid.uuid4())
-    record = {"username": username, "password": _ph.hash(password), "image": blob.public_url}
+    record = {"username": username, "password": _ph.hash(password), "image": blob.public_url,"bio":bio}
     if not _add_user(new_user_id, record):
         # Someone else claimed the username while the image was uploading
         blob.delete()

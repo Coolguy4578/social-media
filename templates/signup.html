@@ -50,9 +50,21 @@
     <br>
     <input name="username" id="username" autocomplete="username" required type="text">
     <br>
+    <label for="bio">Write a short description of yourself (less than 500 characters)<span class="required-icon">*</span></label>
+    <br>
+    <textarea name="bio" id="bio" placeholder="Write about what you love doing, something you just learned about yourself, or anything else." required maxlength="500"></textarea>
+    <br>
+    <h2>Password requirements</h2>
+    <ul>
+
+        <li>One lowercase letter</li>
+        <li>One number</li>
+        <li>One special character</li>
+        <li>Length must be at least 8 characters</li>
+    </ul>
     <label for="password">Enter a secure password <span class="required-icon">*</span></label>
     <br>
-    <input name="password" id="password" autocomplete="new-password" required type="password">
+    <input name="password" id="password" autocomplete="new-password" required type="password" pattern="(?=.*\d)(?=.*[a-z])(?=.*[\W_]).{8,}" title="Must contain at least one uppercase letter, one number, one special character, and be at least 8 characters long.">
     <br>
     <label for="image">Create a profile image.<span class="required-icon">*</span></label>
     <input name="image" id="image" required type="file" accept="image/*">
